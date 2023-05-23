@@ -1,0 +1,68 @@
+0 
+21
+-Mamsrun=
+-Masflags=--32
+-Mcc=gcc
+-Mcfl= -pipe -m32 -O -I/usr/local/CAD/synopsys/vcs/F-2011.12/include
+-Mcplusplus=g++
+-Mcrt0=
+-Mcrtn=
+-Mcsrc=
+-Mldflags= -melf_i386 -m32
+-Mobjects= /usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/libvirsim.so /usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/librterrorinf.so /usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/libsnpsmalloc.so
+-Mout=simv
+-Msaverestoreobj=/usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/vcs_save_restore_new.o
+-Msyslibs=/usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/ctype-stubs_32.a -ldl
+-Mvcsaceobjs=
+-gen_obj
+/usr/local/CAD/synopsys/vcs/F-2011.12/linux/bin/vcs1
+cpu_ex3.v
+cpu_module.v
+fpga_ex3.v
+test_fpga_ex3.v
+test_module.v
+30
+sysc_uni_pwd=/home/vlsilab/isshiki/classes/ex3_2013/verilog
+VMR_MODE_FLAG=32
+VENDOR=unknown
+VCS_MX_HOME_INTERNAL=1
+VCS_HOME=/usr/local/CAD/synopsys/vcs/F-2011.12
+VCS_DEPTH=0
+VCS_ARG_ADDED_FOR_TMP=1
+VCS_ARCH=linux
+VCS_AMD_PURE32=1
+UNAME=/bin/uname
+TOOL_HOME=/usr/local/CAD/synopsys/vcs/F-2011.12/linux
+SYN_HOME=/usr/local/CAD/synopsys/syn/F-2011.09-SP2
+SYNOPSYS=/usr/local/CAD/synopsys
+SSH_TTY=/dev/pts/4
+SSH_CONNECTION=131.112.84.249 62551 131.112.84.222 22
+SSH_CLIENT=131.112.84.249 62551 22
+SSH_ASKPASS=/usr/libexec/openssh/gnome-ssh-askpass
+SNPSLMD_LICENSE_FILE=1700@celtic.vdc.ss.titech.ac.jp:1700@vdec-cad1:/usr/local/CAD/synopsys/vcs/F-2011.12/flexlm//license.dat
+SCRNAME=vcs
+SCRIPT_NAME=vcs
+REMOTEHOST=stars2.vlsi.ss.titech.ac.jp
+OVA_UUM=0
+OSTYPE=linux
+LESSOPEN=|/usr/bin/lesspipe.sh %s
+INPUTRC=/etc/inputrc
+HOSTTYPE=x86_64-linux
+HOSTNAME=aries.vlsi.ss.titech.ac.jp
+HOST=aries.vlsi.ss.titech.ac.jp
+G_BROKEN_FILENAMES=1
+GROUP=vlsi-staffs
+0
+6
+1361774775 def_ex3.v
+1361494595 test_module.v
+1361874723 test_fpga_ex3.v
+1361513106 cpu_module.v
+1361515086 cpu_ex3.v
+1361768202 fpga_ex3.v
+4
+0 
+1322023697 /usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/libvirsim.so
+1322023323 /usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/librterrorinf.so
+1322023249 /usr/local/CAD/synopsys/vcs/F-2011.12/linux/lib/libsnpsmalloc.so
+1362102732 simv.daidir

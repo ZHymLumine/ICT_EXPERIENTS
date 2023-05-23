@@ -1,0 +1,25 @@
+setenv SNPSLMD_LICENSE_FILE 1700@celtic.vdc.ss.titech.ac.jp:1700@vdec-cad1
+setenv SYNOPSYS /eda/synopsys
+
+#VCS
+setenv VCS_HOME /eda/synopsys/vcs/F-2011.12
+set path = ( $path \
+             $VCS_HOME/bin \
+	     $VCS_HOME/linux/bin \
+             )
+
+#Design Compiler
+setenv SYN_HOME $SYNOPSYS/syn/F-2011.09-SP2
+set path = ( $path \
+             $SYN_HOME/bin \
+             $SYN_HOME/linux/bin \
+             )
+
+
+if ( $?LM_LICENSE_FILE ) then
+        setenv LM $LM_LICENSE_FILE
+        setenv LM_LICENSE_FILE 1700@celtic.vdc.ss.titech.ac.jp,1700@vdec-cad1:${LM}
+        unsetenv LM
+else
+        setenv LM_LICENSE_FILE 1700@celtic.vdc.ss.titech.ac.jp
+endif

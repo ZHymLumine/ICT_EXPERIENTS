@@ -1,0 +1,17 @@
+Info (10281): Verilog HDL Declaration information at cpu_module.v(414): object "tx_en" differs only in case from object "TX_EN" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(29): object "ar" differs only in case from object "AR" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(29): object "pc" differs only in case from object "PC" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(28): object "dr" differs only in case from object "DR" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(28): object "ac" differs only in case from object "AC" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(28): object "ir" differs only in case from object "IR" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(21): object "outr" differs only in case from object "OUTR" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(43): object "inpr" differs only in case from object "INPR" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(30): object "sc" differs only in case from object "SC" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(26): object "e" differs only in case from object "E" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(26): object "r" differs only in case from object "R" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(26): object "s" differs only in case from object "S" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(23): object "ien" differs only in case from object "IEN" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(16): object "fgi" differs only in case from object "FGI" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(20): object "fgo" differs only in case from object "FGO" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(23): object "iot" differs only in case from object "IOT" in the same scope
+Info (10281): Verilog HDL Declaration information at cpu_ex3.v(24): object "imsk" differs only in case from object "IMSK" in the same scope

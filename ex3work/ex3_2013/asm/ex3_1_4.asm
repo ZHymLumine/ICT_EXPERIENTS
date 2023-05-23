@@ -1,0 +1,10 @@
+	ORG 10
+	LDA A
+	STA B
+	STA C
+
+A,	HEX 001e
+B,	HEX 0000
+C,	HEX 0000
+
+	END

@@ -1,0 +1,5 @@
+vcs -full64 fpga_ex3.v cpu_ex3.v cpu_module.v test_fpga_ex3.v test_module.v
+rm -rf fpga_ex3.log
+./simv  > fpga_ex3.log
+less fpga_ex3.log
+

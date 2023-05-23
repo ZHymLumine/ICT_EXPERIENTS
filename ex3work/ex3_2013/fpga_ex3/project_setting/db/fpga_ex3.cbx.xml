@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<LOG_ROOT>
+	<PROJECT NAME="fpga_ex3">
+		<CBX_INST_ENTRY INSTANCE_NAME="|fpga_ex3|cpu_ex3:CPU_EX3|ram_sync_4kx16:MEM|altsyncram:mem_rtl_0" CBX_FILE_NAME="altsyncram_d7m1.tdf"/>
+		<CBX_INST_ENTRY INSTANCE_NAME="|fpga_ex3|rom_sync_4kx32:ROM|altsyncram:mem_rtl_0" CBX_FILE_NAME="altsyncram_0k71.tdf"/>
+	</PROJECT>
+</LOG_ROOT>

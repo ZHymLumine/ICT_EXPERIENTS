@@ -1,0 +1,45 @@
+	ORG 10
+	SIO
+INPUT,  SKI
+		BUN INPUT
+		INP
+		STA P I   / M[M[P1]]  AC
+		ISZ P	  / ++M[P1] (no skip)
+		ISZ CNT
+		BUN INPUT / next input
+	LDA B
+	SZA 
+	BUN MOD
+	HLT / divive by zero
+	
+MOD,CLA
+	LDA B
+	CMA
+	INC
+	STA NB
+L0,	CLE
+	LDA A
+	CIL
+	STA A
+	LDA R
+	CIL
+	STA R
+	ADD NB
+	SNA
+	STA R
+	LDA Q
+	CIL
+	STA Q
+	ISZ K
+	BUN L0
+	HLT
+CNT, DEC -2
+P, SYM A
+A,	HEX 03EF
+B,	HEX 0000
+NB,	HEX 0000
+R,	HEX 0000
+Q, 	HEX 0000
+K,	DEC -16
+	END
+	

@@ -1,0 +1,18 @@
+/// RandomPeripheral trace (in) :
+/// bit[17]   (port ID) : 0 = gpio, 1 = uart
+/// bit[16]   (trace type) : 0 = interval cycles, 1 = data
+/// bit[15:0] (value)
+
+20021
+30030
+20024
+30031
+2001b
+30035
+2000f
+30034
+2002b
+30036
+20023
+30071
+20024
