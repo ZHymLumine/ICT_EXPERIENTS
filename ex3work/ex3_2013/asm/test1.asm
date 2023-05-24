@@ -27,5 +27,6 @@ X,	DEC 0		/ X = -70 --> X:init
 _M_,
 Y,	DEC 5		/ Y = 111 --> Y:init
 P,	DEC 0		/ (init : 0) P = X * Y : result
+VM2,	DEC -2
 END
 

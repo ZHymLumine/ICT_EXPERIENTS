@@ -207,8 +207,7 @@ LOOP,       / loop increase board
 PUT_ME,     / put new position
         LDA CH_M
         STA P_BRD I
-		BSA UPD_TURN	/ call UPD_TURN (update turn)
-		BUN PRP_OUT		/ goto PRP_OUT (prepare output)
+        BUN PRE_UPD_TURN
 NG_YM, / your move is invalid
 		LDA VH1			/ AC     <- 1
 		BSA SET_ML		/ call SET_ML (set message list)
@@ -221,6 +220,8 @@ FIRE,
         STA P_MY_BULLET_X
         LDA A_MY_BULLET_Y
         STA P_MY_BULLET_Y
+		LDA A_MY_BULLET_SPEED
+		STA P_MY_BULLET_SPEED
         LDA TOTAL_BULLET
         CMA
         INC
@@ -232,60 +233,198 @@ FIND_BULLET,
         ISZ P_MY_BULLET_X
         ISZ P_MY_BULLET_Y
         ISZ P_MY_BULLET_SPEED      
-        ISZ CNT_BULLET      /   can't find position, goto KEEP 
+        ISZ CNT_BULLET      / if can't find position, default action: goto KEEP 
         BUN FIND_BULLET     / find next position for bullet
 KEEP,   
         LDA MY_SPEED
         INC
         STA MY_SPEED
-        BSA UPD_TURN	/ call UPD_TURN (update turn)
-		BUN PRP_OUT		/ goto PRP_OUT (prepare output)
+        BUN PRE_UPD_TURN
 LOAD_BULLET,
         LDA MY_X
         STA P_MY_BULLET_X I
         LDA MY_Y
         STA P_MY_BULLET_Y I
         LDA MY_SPEED
-        STA P_MY_BULLET_SPEED I
-        LDA VD1
-        STA MY_SPEED
-UPDATE_BRD,
-        LDA MY_Y
+		ADD VM1			/ AC = MY_SPEED - 2
+		SZA
+		BUN MY_SPEED_2	
+		BUN MY_SPEED_1
+MY_SPEED_1,
+		LDA VH1
+		STA P_MY_BULLET_SPEED I		/ MY_SPEED = 1, put 1 to the array
+		BUN PRE_UPD_TURN
+MY_SPEED_2,
+		LDA VH2
+		STA P_MY_BULLET_SPEED I		/ MY_SPEED >= 2
+		LDA VH1
+		STA MY_SPEED
+        BUN PRE_UPD_TURN
+
+PRE_UPD_TURN,
+        BSA UPD_TURN
+        LDA CNT_TURN
+        INC
+        STA CNT_TURN
+        SZA				/ CNT_TURN = 0, goto UPD_BULLET, update bullet every 2 turns
+        BUN PRP_OUT
+		BSA UPD_BULLET
+        BUN PRP_OUT
+
+
+UPD_BULLET,	HEX 0		/ update position of bullets
+        LDA VM2			/ initialize CNT_TURN to -2
+        STA CNT_TURN
+        LDA TOTAL_BULLET
         CMA
         INC 
-        STA CNT_MOVE
+        STA CNT_BULLET
+        LDA A_MY_BULLET_X		/ only need to update x coordinate of bullet
+        STA P_MY_BULLET_X
+        LDA A_MY_BULLET_SPEED
+        STA P_MY_BULLET_SPEED
+LOOP_UPDATE_MY_BULLET,       		/ update every buttet 
+        LDA P_MY_BULLET_SPEED I 
+        CMA 
+        INC 					/ AC = -speed
+        ADD P_MY_BULLET_X I      / x = x - speed
+        STA P_MY_BULLET_X I
+        ISZ P_MY_BULLET_SPEED   / speed[i ++]
+        ISZ P_MY_BULLET_X       / x[i ++]
+        ISZ CNT_BULLET
+        BUN LOOP_UPDATE_MY_BULLET
+/ prepare to update pc's bullets
+		LDA TOTAL_BULLET
+        CMA
+        INC 
+        STA CNT_BULLET
+        LDA A_PC_BULLET_X		/ only need to update x coordinate of bullet
+        STA P_PC_BULLET_X
+        LDA A_PC_BULLET_SPEED
+        STA P_PC_BULLET_SPEED
+LOOP_UPDATE_PC_BULLET,
+		LDA P_PC_BULLET_X I 
+		ADD VM5
+		SPA
+		BUN UPD_PC_BULLET_SPEED
+		BUN INI_BULLET	
+INI_BULLET,		
+		LDA VM1
+		STA P_PC_BULLET_X I
+		BUN	NXT 
+UPD_PC_BULLET_SPEED,
+		LDA P_PC_BULLET_SPEED I 			/ AC = pc_speed
+        ADD P_PC_BULLET_X I      / x = x + speed
+        STA P_PC_BULLET_X I
+NXT,
+        ISZ P_PC_BULLET_SPEED   / speed[i ++]
+        ISZ P_PC_BULLET_X       / x[i ++]
+        ISZ CNT_BULLET
+        BUN LOOP_UPDATE_PC_BULLET
+UPDATE_BRD,				/ after updating all bullets, draw bullets on the board
 		LDA A_BRD		/ AC        <- M[A_BRD] (BRD)
-		ADD VD16	    / AC        <- BRD + 16
+		ADD VD4	    / AC        <- BRD + 4
 		STA P_BRD		/ M[P_BRD]  <- BRD + M[TMI]
-        LDA CH_O
+        LDA VM11
+        STA CNT_CLR_BULLET
+        LDA CH_DOT
         STA P_BRD I
+CLR_BULLET,       		/ first, put the 12 mass to . 
         ISZ P_BRD
         STA P_BRD I
-        ISZ P_BRD
-        STA P_BRD I
-        ISZ P_BRD
-        STA P_BRD I
-        LDA A_BRD		/ AC        <- M[A_BRD] (BRD)
-		ADD VD16	    / AC        <- BRD + 16
-		STA P_BRD		/ M[P_BRD]  <- BRD + 16
-        LDA CNT_MOVE
-        SZA
-        BUN LOOP
-        BUN PUT_ME
-LOOP,       / loop increase board
-        ISZ P_BRD
-        ISZ CNT_MOVE
-        BUN LOOP
-PUT_ME,     / put new position
-        LDA CH_M
-        STA P_BRD I
-		BSA UPD_TURN	/ call UPD_TURN (update turn)
-		BUN PRP_OUT		/ goto PRP_OUT (prepare output) 
+        ISZ CNT_CLR_BULLET
+        BUN CLR_BULLET
+		LDA TOTAL_BULLET
+		CMA
+		INC 
+		STA CNT_BULLET		/ total number of bullets (control loop)
+	/	BUN DRAW_PC_BULLET
+        LDA A_MY_BULLET_X 
+		STA P_MY_BULLET_X
+		LDA A_MY_BULLET_Y
+		STA P_MY_BULLET_Y
+LOOP_DRAW_BULLET,
+		LDA A_BRD
+		STA P_BRD
+		LDA P_MY_BULLET_X I 
+		SPA
+		BUN NXT_BULLET		/ only draw bullets with x >= 0
+		CIL
+		CIL					/ X = X * 4
+		ADD P_MY_BULLET_Y I / AC = 4*X + Y
+		CMA
+		INC
+		STA CNT_FIND_BULLET	/ CNT_CLR_BULLET = - (4*X + Y)
+		SZA
+        BUN LOOP_FIND_BULLET
+        BUN PUT_BULLET 
+LOOP_FIND_BULLET,			/ find postion to draw bullet
+		ISZ P_BRD
+		ISZ CNT_FIND_BULLET
+		BUN LOOP_FIND_BULLET
+PUT_BULLET,					/ put bullet to the board
+		LDA CH_I
+		STA P_BRD I
+NXT_BULLET,		
+		ISZ P_MY_BULLET_X
+		ISZ P_MY_BULLET_Y
+		ISZ CNT_BULLET
+		BUN LOOP_DRAW_BULLET
+		BSA SHOW_GAME
+		BUN UPD_BULLET I
+
+DRAW_PC_BULLET,
+		LDA A_BRD		/ AC        <- M[A_BRD] (BRD)
+		STA P_BRD		/ M[P_BRD]  <- BRD + 4
+		LDA TOTAL_BULLET
+		CMA
+		INC 
+		STA CNT_BULLET
+		LDA A_PC_BULLET_X 
+		STA P_PC_BULLET_X
+		LDA A_PC_BULLET_Y
+		STA P_PC_BULLET_Y
+LOOP_DRAW_PC_BULLET,
+		LDA A_BRD
+		STA P_BRD
+		LDA P_PC_BULLET_X I 
+		SPA
+		BUN NXT_PC_BULLET		/ x < 0, skip initial value
+		ADD VM5
+		SNA
+		BUN NXT_PC_BULLET		/ only draw bullets with x <= 4
+		LDA P_PC_BULLET_X I
+		CIL
+		CIL					/ X = X * 4
+		ADD P_PC_BULLET_Y I / AC = 4*X + Y
+		CMA
+		INC
+		STA CNT_FIND_BULLET	/ CNT_CLR_BULLET = - (4*X + Y)
+		SZA
+        BUN LOOP_FIND_PC_BULLET
+        BUN PUT_PC_BULLET 
+LOOP_FIND_PC_BULLET,			/ find postion to draw bullet
+		ISZ P_BRD
+		ISZ CNT_FIND_BULLET
+		BUN LOOP_FIND_PC_BULLET
+PUT_PC_BULLET,					/ put bullet to the board
+		LDA CH_I
+		STA P_BRD I
+NXT_PC_BULLET,		
+		ISZ P_PC_BULLET_X
+		ISZ P_PC_BULLET_Y
+		ISZ CNT_BULLET
+		BUN LOOP_DRAW_PC_BULLET
+		BSA SHOW_GAME
+		BUN UPD_BULLET I
+
 
 /////////// M[STT] = 2 : put my move  ///////////
 STT_2,
 		BSA MY_MOV		/ call MY_MOV (next move position stored in M[P_BRD])
 / put my move to board
+		LDA VH2
+		STA PC_ACTION
         LDA PC_ACTION
         ADD VM1			/ AC <- M[STT] - 1
 		SPA				/ (M[STT] >= 1) ? skip next
@@ -321,7 +460,7 @@ PC_STT_1,   / move to right
         BUN PC_MOVE
 PC_STT_2,   / PC fires
         CLA
-        BUN SET_PC_MSG
+        BUN PC_FIRE
 PC_STT_3,    / PC don't move
         LDA PC_SPEED
         INC
@@ -362,10 +501,53 @@ SET_PC_MSG, / set output message
 		STA NXT_STT		/ M[NXT_STT]   <- 3
 		BUN PRP_OUT		/ goto PRP_OUT (prepare output)
 
+PC_FIRE,
+		LDA A_PC_BULLET_X
+        STA P_PC_BULLET_X
+        LDA A_PC_BULLET_Y
+        STA P_PC_BULLET_Y
+		LDA A_PC_BULLET_SPEED
+		STA P_PC_BULLET_SPEED
+        LDA TOTAL_BULLET
+        CMA
+        INC
+        STA CNT_BULLET      / times of loop
+PC_FIND_BULLET,        
+        LDA P_PC_BULLET_X I  
+        SPA                 / bullet >= 0, can't shoot
+        BUN PC_LOAD_BULLET   
+        ISZ P_PC_BULLET_X
+        ISZ P_PC_BULLET_Y
+        ISZ P_PC_BULLET_SPEED      
+        ISZ CNT_BULLET      / if can't find position, default action: goto KEEP 
+        BUN PC_FIND_BULLET     / find next position for bullet
+		BUN PC_STT_3
+PC_LOAD_BULLET,
+        LDA PC_X
+        STA P_PC_BULLET_X I
+        LDA PC_Y
+        STA P_PC_BULLET_Y I
+        LDA PC_SPEED
+		ADD VM1			/ AC = MY_SPEED - 2
+		SZA
+		BUN PC_SPEED_2	
+		BUN PC_SPEED_1
+PC_SPEED_1,
+		LDA VH1
+		STA P_PC_BULLET_SPEED I		/ MY_SPEED = 1, put 1 to the array
+		BUN SET_PC_MSG
+PC_SPEED_2,
+		LDA VH2
+		STA P_PC_BULLET_SPEED I		/ MY_SPEED >= 2
+		LDA VH1
+		STA PC_SPEED
+        BUN SET_PC_MSG
+
 /////////// M[STT] = 3 : show my move  ///////////
 STT_3,
-		BSA UPD_TURN	/ call UPD_TURN (update turn)
-		BUN PRP_OUT		/ goto PRP_OUT (prepare output)
+		BUN PRE_UPD_TURN
+        /BSA UPD_TURN	/ call UPD_TURN (update turn)
+		/BUN PRP_OUT		/ goto PRP_OUT (prepare output)
 
 /////////// M[STT] = 4 : end game  ///////////
 STT_4,
@@ -860,15 +1042,24 @@ CNT_1,	DEC 0		/ counter 1
 CNT_2,	DEC 0		/ counter 2
 CNT_CH,	DEC 0		/ char counter
 CNT_MOVE, DEC 0     / where to put M
+CNT_CLR_BULLET, DEC 0
+_M_,
+CNT_FIND_BULLET,	DEC 0
+_M_,
+CNT_TURN,   DEC -2
 P_BRD,	HEX 0		/ pointer to BRD
 P_MY_LNC, HEX 0		/ pointer to MY_LNC
 P_YR_LNC, HEX 0		/ pointer to YR_LNC
-P_INI_BRD, HEX 0    / pointer to INI_BRD    
+P_INI_BRD, HEX 0    / pointer to INI_BRD   
 P_MY_BULLET_X,   HEX 0   / pointer to MY_BULLET_X
 P_MY_BULLET_Y,   HEX 0   / pointer to MY_BULLET_Y
+_M_,
 P_PC_BULLET_X,   HEX 0   / pointer to PC_BULLET_X
+_M_,
 P_PC_BULLET_Y,   HEX 0   / pointer to PC_BULLET_Y
-P_MY_BULLET_SPEED, HEX 0    /pointer to MY_BULLET_SPEED
+P_MY_BULLET_SPEED, 	HEX 0    /pointer to MY_BULLET_SPEED
+_M_,
+P_PC_BULLET_SPEED,	HEX 0
 BRD_OFS,DEC 0		/ BRD offset
 BRD_POS,DEC 0		/ BRD pos
 N_P_BRD,DEC 0		/ pointer to BRD for my next move
@@ -958,32 +1149,50 @@ TOTAL_BULLET,   DEC 4
 CNT_BULLET,     DEC 0       / control loop
 
 A_MY_BULLET_X,    SYM MY_BULLET_X
+_M_,
 MY_BULLET_X,      DEC -1
-                  DEC -1
-                  DEC -1
-                  DEC -1
+_M_,                  DEC -1
+_M_,                  DEC -1
+_M_,                  DEC -1
 
 A_MY_BULLET_Y,    SYM MY_BULLET_Y
+_M_,
 MY_BULLET_Y,      DEC -1
-                  DEC -1
-                  DEC -1
-                  DEC -1
+_M_,                 DEC -1
+_M_,                  DEC -1
+_M_,                  DEC -1
 
 A_MY_BULLET_SPEED,      SYM MY_BULLET_SPEED 
+_M_,
 MY_BULLET_SPEED,        DEC 0
-                        DEC 0
-                        DEC 0
-                        DEC 0
+_M_,                        DEC 0
+_M_,                       	DEC 0
+_M_,                       DEC 0
 
-A_PC_BULLET     SYM PC_BULLET
-PC_BULLET,      DEC -1
-                DEC -1
-                DEC -1
-                DEC -1
+A_PC_BULLET_X,     SYM PC_BULLET_X
+_M_,
+PC_BULLET_X,       DEC -1
+_M_,                   DEC -1
+_M_,                   DEC -1
+_M_,                   DEC -1
+
+A_PC_BULLET_Y,     SYM PC_BULLET_Y
+_M_,
+PC_BULLET_Y,       DEC -1
+_M_,                   DEC -1
+_M_,                   DEC -1
+_M_,                   DEC -1
+
+A_PC_BULLET_SPEED,  SYM PC_BULLET_SPEED
+_M_,
+PC_BULLET_SPEED,	DEC 0
+_M_,					DEC 0
+_M_,					DEC 0
+_M_,					DEC 0
+
 / data (read-only)
 AMK,	HEX FFF0	/ AMK = FFF0 (and mask)
 AMKN,	HEX 000F	/ AMKN = 000F (and mask negated)
-CNT_TURN,   DEC -2
 VD1,    DEC 1
 VH1,	HEX 1		/ VH1 = 1
 VH2,	HEX 2		/ VH2 = 2
@@ -993,6 +1202,7 @@ VH4,	HEX 4		/ VH4 = 4
 VH5,	HEX 5		/ VH5 = 5
 VH8,	HEX 8		/ VH8 = 8
 VH12,   HEX 12
+VD4,    DEC 4
 VD15,   DEC 15
 VD16,   DEC 16      / VD16 = 16   
 VM1,	DEC -1		/ VM1 = -1
@@ -1003,6 +1213,7 @@ VM5,    DEC -5      / VM5 = -5
 VM8,	DEC -8		/ VM2 = -8
 VM9,	DEC -9		/ VM2 = -9
 VM10,	DEC -10		/ VM10 = -10
+VM11,   DEC -11
 VM20,   DEC -20     / VM20 = -20
 VM100,  DEC -100
 CH_0,	CHR 0
@@ -1015,6 +1226,7 @@ CH_M,   CHR M
 CH_E,   CHR E
 CH_DOT, CHR .
 CH_O,   CHR O
+CH_I,   CHR I
 CH_LY,	CHR y
 MY_MK,	CHR X
 YR_MK,	CHR O		/ "ooh"
@@ -1320,7 +1532,9 @@ MY_Y,   DEC 1
 PC_X,    DEC 0
 PC_Y,    DEC 3
 MY_SPEED,    DEC 1
+_M_,
 PC_SPEED,    DEC 1
+_M_,
 PC_ACTION,   DEC 0 
 SEED,         DEC 1       / Initial seed
 MULTIPLIER,     DEC 5       / Multiplier
