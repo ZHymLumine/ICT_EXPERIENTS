@@ -270,7 +270,15 @@ PRE_UPD_TURN,
         BUN PRP_OUT
 		BSA UPD_BULLET
         BUN PRP_OUT
-
+		BSA CHK_WIN		/ call CHK_WIN
+		SZA				/ (AC == 0) ? skip next (AC = winner mark)
+		BUN END_GAME	/ goto END_TURN (winner mark != 0)
+		BUN PRP_OUT
+END_GAME,
+		LDA VH4			/ AC         <- 4
+		STA NXT_STT		/ M[NXT_STT] <- 4 (next state : end game)
+		BSA SHOW_GAME	/ call SHOW_GAME
+		BUN PRP_OUT
 
 UPD_BULLET,	HEX 0		/ update position of bullets
         LDA VM2			/ initialize CNT_TURN to -2
@@ -423,8 +431,6 @@ NXT_PC_BULLET,
 STT_2,
 		BSA MY_MOV		/ call MY_MOV (next move position stored in M[P_BRD])
 / put my move to board
-		LDA VH2
-		STA PC_ACTION
         LDA PC_ACTION
         ADD VM1			/ AC <- M[STT] - 1
 		SPA				/ (M[STT] >= 1) ? skip next
@@ -551,22 +557,30 @@ STT_3,
 
 /////////// M[STT] = 4 : end game  ///////////
 STT_4,
-		LDA WINNER		/ AC         <- M[WINNER]
-		SZA				/ (M[WINNER] == 0) ? skip next
-		BUN WHO_WON		/ BUN WHO_WON (who won??)
-		LDA A_MG_TIE	/ AC         <- M[A_MG_TIE] (MG_TIE : "it's a tie")
-		STA RESULT		/ M[RESULT]  <- "it's a tie"
+		/LDA WINNER		/ AC         <- M[WINNER]
+		/LDA MY_WIN
+		/SZA				/ (M[WINNER] == 0) ? skip next
+		/BUN WHO_WON		/ BUN WHO_WON (who won??)
+		/LDA A_MG_TIE	/ AC         <- M[A_MG_TIE] (MG_TIE : "it's a tie")
+		/STA RESULT		/ M[RESULT]  <- "it's a tie"
+		LDA MY_WIN
+		SZA 
+		BUN MY_WON
 		BUN STT_4_1		/ goto STT_4_1
 WHO_WON,
-		CMA
+		LDA MY_WIN
+		SZA				/ my_win = 0
+		BUN MY_WON
+		BUN PC_WON
 		INC				/ AC         <- - M[WINNER]
 		ADD YR_MK		/ AC         <- M[YR_MK] - M[WINNER]
 		SZA				/ (M[YR_MK] == M[WINNER]) ? skip next
-		BUN I_WON		/ goto I_WON
+		BUN PC_WON		/ goto PC_WON
+MY_WON,		
 		LDA A_MG_YWN	/ AC         <- M[A_MG_YWN] (MG_YWN : "you win!")
 		STA RESULT		/ M[RESULT]  <- "you win!"
 		BUN STT_4_1		/ goto STT_4_1
-I_WON,
+PC_WON,
 		LDA A_MG_IWN	/ AC         <- M[A_MG_IWN] (MG_IWN : "I win!")
 		STA RESULT		/ M[RESULT]  <- "I win!"
 STT_4_1,
@@ -649,9 +663,9 @@ UPD_TURN, HEX 0
 		INC				/ AC         <- - M[TURN]
 		INC				/ AC         <- 1 - M[TURN]
 		STA TURN		/ M[TURN]    <- 1 - M[TURN]
-		/BSA CHK_WIN		/ call CHK_WIN
-		/SZA				/ (AC == 0) ? skip next (AC = winner mark)
-		/BUN END_TURN	/ goto END_TURN (winner mark != 0)
+		BSA CHK_WIN		/ call CHK_WIN
+		SZA				/ (AC == 0) ? skip next (AC = winner mark)
+		BUN END_TURN	/ goto END_TURN (winner mark != 0)
 		ISZ CNT_MOV		/ ((++M[CNT_MOV]) == 0) ? skip next
 		BUN NXT_TURN	/ goto NXT_TURN
 END_TURN,
@@ -723,35 +737,34 @@ R_CHK_3_0,
 CHK_WIN, HEX 0
 /////////// subroutine (check winner)  ///////////
 / return AC (winner) : 'O' or 'X' or 0 (no winner)
-		LDA VM8			/ AC         <- -8
-		STA CNT_1		/ M[CNT_1]   <- 8
-		LDA A_CW		/ AC         <- M[A_CW] (CW)
-		STA P_CW		/ M[P_CW]    <- CW
-L_CHK_WIN, / loop check winner
-		LDA P_CW I		/ AC         <- M[M[P_CW]] (offset)
-		STA BRD_OFS		/ M[BRD_OFS] <- offset
-		ISZ P_CW		/ ++M[P_CW]
-		LDA P_CW I		/ AC         <- M[M[P_CW]] (pos)
-		ISZ P_CW		/ ++M[P_CW]
-		BSA CHK_3		/ call CHK_3
-		SZA				/ (AC == 0) ? skip next
-		BUN CHK_WIN I	/ return from CHK_WIN (AC != 0 : winner mark)
-		ISZ CNT_1		/ ((++M[CNT_1]) == 0) ? skip next
-		BUN L_CHK_WIN	/ goto L_CHK_WIN (loop check winner)
-		BUN CHK_WIN I	/ return from CHK_WIN (AC == 0 : no winner)
+		LDA A_MY_BULLET_X
+		STA P_MY_BULLET_X
+		LDA A_MY_BULLET_Y
+		STA P_MY_BULLET_Y
+		LDA TOTAL_BULLET
+		CMA
+		INC
+		STA CNT_BULLET
+CHK_MY_WIN,
+		LDA P_MY_BULLET_X I 
+		SZA 
+		BUN CHK_NXT_MY_WIN	/ X != 0 check next bullet
+		LDA P_MY_BULLET_Y I	/ X = 0
+		CMA
+		INC
+		ADD PC_Y
+		SZA
+		BUN CHK_NXT_MY_WIN
+		LDA VH1				/ y coordinate of bullet is equal 0, my win!!
+		STA MY_WIN
+CHK_NXT_MY_WIN,	
+		ISZ P_MY_BULLET_X
+		ISZ P_MY_BULLET_Y
+		ISZ CNT_BULLET
+		BUN CHK_MY_WIN
+		LDA MY_WIN
+		BUN CHK_WIN I
 
-MY_DM_MOV,	HEX 0
-////////// subroutine (my dumb move) //////////
-		LDA A_BRD		/ AC <- M[A_BRD] (BRD)
-		STA P_BRD		/ M[P_BRD] <- BRD
-L_CHK_BRD, / loop check board : pos = 0, 1, ... 8
-		LDA	P_BRD I		/ AC <- M[BRD + pos]
-		SZA				/ (M[BRD + pos] == 0) ? skip next
-		BUN N_CHK_BRD	/ goto N_CHK_BRD
-		BUN MY_DM_MOV I	/ return from MY_DM_MOV
-N_CHK_BRD,
-		ISZ P_BRD		/ ++M[P_BRD]
-		BUN L_CHK_BRD	/ goto L_CHK_BRD (loop check board)
 MY_MOV,	HEX 0
 ////////// subroutine (my move) //////////
         BSA RAND
@@ -825,108 +838,7 @@ LSUB,   CLE
         ISZ K
         BUN LSUB
         BUN DIVIDE I
-
-
-LD_TBRD, HEX 0
-////////// subroutine (load traslated board position) //////////
-/ arg 0 (AC) : table-addr (H1, H2, V1, V2, D1, D2, D3, D4)
-/ M[BRD_POS] : pos
-/ return (AC < 0) : invalid transposition (happens on diagonal translations on edge positions)
-/ return (AC >= 0) : translated board position (M[BRD + M[table-addr + pos]])
-		ADD BRD_POS		/ AC <- table-addr + pos
-		STA TMA			/ M[TMA] <- table-addr + pos
-		LDA TMA I		/ AC <- M[table-addr + pos]
-		SPA				/ (M[table-addr + pos] >= 0) ? skip next
-		BUN LD_TBRD I	/ return from LD_TBRD (AC < 0 : invalid translation)
-		ADD A_BRD		/ AC <- BRD + M[table-addr + pos]
-		STA TMA			/ M[TMA] <- BRD + M[table-addr + pos]
-		LDA TMA I		/ AC <- M[BRD + M[table-addr + pos]]
-		BUN LD_TBRD I	/ return from LD_TBRD (AC >= 0 : valid translated board position)
-
-WBF,	HEX 0
-////////// subroutine (WinBlockFork) //////////
-/ M[BRD_POS] : pos
-/ return 0 : not my win...
-/ return 1 : my win!!!
-		CLA				/ AC <- 0
-		STA MY_LN		/ M[MY_LN] <- 0
-		STA MY_BLK		/ M[MY_BLK] <- 0
-		LDA A_HVD		/ AC <- M[A_HVD] (HVD)
-		STA P_HVD		/ M[P_HVD] <- HVD (M[HVD] = {H1, H2, V1, V2, D1, D2, D3, D4})
-		LDA VM4			/ AC <- -4
-		STA CNT_1		/ M[CNT_1] <- -4
-L_WBF,	/ loop WBF
-		LDA P_HVD I		/ AC <- M[HVD] ({H1, H2, V1, V2, D1, D2, D3, D4})
-		ISZ P_HVD		/ ++M[P_HVD]
-/ load BRD_1
-		BSA LD_TBRD		/ call LD_TBRD (load translated board position)
-		SPA				/ (M[BRD + M[M[HVD] + pos]] >= 0) ? skip next
-		BUN WBF_2		/ goto WBF_2 (invalid transposition : exit L_WBF loop)
-		STA BRD_1		/ M[BRD_1] <- M[BRD + M[M[HVD] + pos]]
-		LDA P_HVD I		/ AC <- M[HVD] ({H1, H2, V1, V2, D1, D2, D3, D4})
-		ISZ P_HVD		/ ++M[P_HVD]
-/ load BRD_2
-		BSA LD_TBRD		/ call LD_TBRD (load translated board position)
-		STA BRD_2		/ M[BRD_2] <- M[BRD + M[HVD] + pos]]
-/ call WBF_POS (WinBlockForkPos)
-		BSA WBF_POS		/ call WBF_POS (WinBlockForkPos)
-		SZA				/ (AC == 0) ? skip next
-		BUN WBF I		/ return from WBF (return 1 : my win!!!)
-		ISZ CNT_1		/ ((++M[CNT_1]) == 0) ? skip next
-		BUN L_WBF		/ goto (loop WBF)
-WBF_2,	/ (M[MY_BLK] != 0 || M[MY_LN] >= 2 && M[N_P_BRD] == 0) ? M[N_P_BRD] <- M[P_BRD]
-		LDA MY_BLK		/ AC <- M[MY_BLK]
-		SZA				/ (M[MY_BLK] == 0) ? skip next
-		BUN SET_NPOS	/ goto SET_NPOS (M[MY_BLK] > 0 : need to block this position)
-/ check my fork (M[MY_LN] >= 2)
-		LDA MY_LN		/ AC <- M[MY_LN]
-		ADD VM2			/ AC <- M[MY_LN] - 2
-		SPA				/ (M[MY_LN] >= 2) ? skip next
-		BUN R_WBF_0		/ goto R_WBF_0 (skip SET_NPOS)
-/ check (M[N_P_BRD] != 0)
-		LDA N_P_BRD		/ AC <- M[N_P_BRD]
-		SZA				/ (M[N_P_BRD] != 0) ? skip next
-		BUN R_WBF_0		/ goto R_WBF_0 (skip SET_NPOS)
-SET_NPOS,
-		LDA P_BRD		/ AC <- current BRD pointer
-		STA N_P_BRD		/ M[N_P_BRD] <- current BRD pointer (I should take this position if I don't win this turn)
-R_WBF_0, / return 0 : not my win...
-		CLA				/ AC <- 0
-		BUN WBF I		/ return from WBF (not my win...)
 		
-WBF_POS,	HEX 0
-////////// subroutine (WinBlockForkPos) //////////
-/ M[BRD_1] : brd[pos1]
-/ M[BRD_2] : brd[pos2]
-/ return 0 : not my win...
-/ return 1 : my win!!!
-		LDA BRD_1		/ AC           <- M[BRD_1]
-		ADD BRD_2		/ AC           <- M[BRD_1] + M[BRD_2]
-		CMA
-		INC				/ AC           <- -(M[BRD_1] + M[BRD_2])
-		STA BRD_SUM_N	/ M[BRD_SUM_N] <- -(M[BRD_1] + M[BRD_2])
-/ check my two-in-a-row : (M[BRD_1] == M[BRD_2] == M[MY_MK])
-		ADD MY_MK_2		/ AC <- M[MY_MK_2] - (M[BRD_1] + M[BRD_2]) (M[MY_MK_2] = M[MY_MK] * 2)
-		SZA				/ (M[MY_MK] * 2 == M[BRD_1] + M[BRD_2]) ? skip next
-		BUN CHK_YL2		/ goto CHK_YL2 (check your two-in-a-row)
-		LDA VH1			/ AC           <- 1
-		BUN WBF_POS I	/ return from WBF_POS (return AC = 1 : my win!!!)
-CHK_YL2, / check your two-in-a-row (M[BRD_1] == M[BRD_2] == M[YR_MK])
-		LDA BRD_SUM_N	/ AC           <- -(M[BRD_1] + M[BRD_2])
-		ADD YR_MK_2		/ AC           <- M[YR_MK_2] - (M[BRD_1] + M[BRD_2]) (M[YR_MK_2] = M[YR_MK] * 2)
-		SZA				/ (M[YR_MK] * 2 == M[BRD_2] + M[BRD_1]) ? skip next
-		BUN CHK_ML1		/ goto CHK_MY1 (check myLine)
-		ISZ MY_BLK		/ ++M[MY_BLK] (block your two-in-a-row)
-		BUN WBF_POS I	/ return from WBF_POS (return AC = 0)
-CHK_ML1, / check myLine (M[MY_MK] == M[BRD_2] + M[BRD_1])
-		LDA BRD_SUM_N	/ AC           <- -(M[BRD_1] + M[BRD_2])
-		ADD MY_MK		/ AC           <- M[MY_MK] - (M[BRD_1] + M[BRD_2])
-		SZA				/ (M[MY_MK] == M[BRD_2] + M[BRD_1]) ? skip next
-		BUN R_WBF_POS_0	/ goto R_WBR_POS_0 (return 0)
-		ISZ MY_LN		/ ++M[MY_LN]
-R_WBF_POS_0, / return 0
-		CLA				/ AC           <- 0
-		BUN WBF_POS I	/ return from WBF_POS (return AC = 0)
 
 SET_MGP,	HEX 0
 ////////// subroutine (set single message for P_OUT) //////////
@@ -1050,8 +962,10 @@ CNT_TURN,   DEC -2
 P_BRD,	HEX 0		/ pointer to BRD
 P_MY_LNC, HEX 0		/ pointer to MY_LNC
 P_YR_LNC, HEX 0		/ pointer to YR_LNC
-P_INI_BRD, HEX 0    / pointer to INI_BRD   
+P_INI_BRD, HEX 0    / pointer to INI_BRD 
+_M_,  
 P_MY_BULLET_X,   HEX 0   / pointer to MY_BULLET_X
+_M_,
 P_MY_BULLET_Y,   HEX 0   / pointer to MY_BULLET_Y
 _M_,
 P_PC_BULLET_X,   HEX 0   / pointer to PC_BULLET_X
@@ -1074,6 +988,7 @@ BYE,	DEC 0		/ (init: 0) bye
 NXT_BYE,DEC 0		/ (init: 0) next bye
 _M_,
 STT,	DEC 0		/ (init: 0) current state
+_M_,
 NXT_STT,DEC 0		/ (init: 0) next state
 OUT_STT,DEC 0		/ (init: 0) output state
 NXT_INP,DEC 0		/ (init: 0) next process input
@@ -1432,105 +1347,14 @@ MG_BRD,	DEC 25	/ MG_BRD length
         CHR -
 		HEX 0A	/ '\n'
 
-P_CW,	HEX 0	/ CW pointer
-A_CW,	SYM CW	/ CW address
-CW,		/ array for CHK_3 parameter
-		DEC 1	/ offset = 1 (0,1,2)
-		DEC 0	/ pos    = 0 (0,1,2)
-		DEC 1	/ offset = 1 (3,4,5)
-		DEC 3	/ pos    = 3 (3,4,5)
-		DEC 1	/ offset = 1 (6,7,8)
-		DEC 6	/ pos    = 6 (6,7,8)
-		DEC 3	/ offset = 3 (0,3,6)
-		DEC 0	/ pos    = 0 (0,3,6)
-		DEC 3	/ offset = 3 (1,4,7)
-		DEC 1	/ pos    = 1 (1,4,7)
-		DEC 3	/ offset = 3 (2,5,8)
-		DEC 2	/ pos    = 2 (2,5,8)
-		DEC 4	/ offset = 4 (0,4,8)
-		DEC 0	/ pos    = 0 (0,4,8)
-		DEC 2	/ offset = 2 (2,4,6)
-		DEC 2	/ pos    = 2 (2,4,6)
-
-P_HVD,	DEC 0	/ HVD pointer
-A_HVD,	SYM A_H1
-A_H1,	SYM H1
-A_H2,	SYM H2
-A_V1,	SYM V1
-A_V2,	SYM V2
-A_D1,	SYM D1
-A_D2,	SYM D2
-A_D3,	SYM D3
-A_D4,	SYM D4
-H1,		DEC  1 / ( H1[0] = 1)
-		DEC  2 / ( H1[1] = 2)
-		DEC  0 / ( H1[2] = 0)
-		DEC  4 / ( H1[3] = 4)
-		DEC  5 / ( H1[4] = 5)
-		DEC  3 / ( H1[5] = 3)
-		DEC  7 / ( H1[6] = 7)
-		DEC  8 / ( H1[7] = 8)
-		DEC  6 / ( H1[8] = 6)
-H2,		DEC  2 / ( H2[0] = 2)
-		DEC  0 / ( H2[1] = 0)
-		DEC  1 / ( H2[2] = 1)
-		DEC  5 / ( H2[3] = 5)
-		DEC  3 / ( H2[4] = 3)
-		DEC  4 / ( H2[5] = 4)
-		DEC  8 / ( H2[6] = 8)
-		DEC  6 / ( H2[7] = 6)
-		DEC  7 / ( H2[8] = 7)
-V1,		DEC  3 / ( V1[0] = 3)
-		DEC  4 / ( V1[1] = 4)
-		DEC  5 / ( V1[2] = 5)
-		DEC  6 / ( V1[3] = 6)
-		DEC  7 / ( V1[4] = 7)
-		DEC  8 / ( V1[5] = 8)
-		DEC  0 / ( V1[6] = 0)
-		DEC  1 / ( V1[7] = 1)
-		DEC  2 / ( V1[8] = 2)
-V2,		DEC  6 / ( V2[0] = 6)
-		DEC  7 / ( V2[1] = 7)
-		DEC  8 / ( V2[2] = 8)
-		DEC  0 / ( V2[3] = 0)
-		DEC  1 / ( V2[4] = 1)
-		DEC  2 / ( V2[5] = 2)
-		DEC  3 / ( V2[6] = 3)
-		DEC  4 / ( V2[7] = 4)
-		DEC  5 / ( V2[8] = 5)
-D1,		DEC  4 / ( D1[0] =  4)
-		DEC -1 / ( D1[1] = -1)
-		DEC  4 / ( D1[2] =  4)
-		DEC -1 / ( D1[3] = -1)
-		DEC  0 / ( D1[4] =  0)
-		DEC -1 / ( D1[5] = -1)
-		DEC  4 / ( D1[6] =  4)
-		DEC -1 / ( D1[7] = -1)
-		DEC  4 / ( D1[8] =  4)
-D2,		DEC  8 / ( D2[0] =  8)
-		DEC -1 / ( D2[1] = -1)
-		DEC  6 / ( D2[2] =  6)
-		DEC -1 / ( D2[3] = -1)
-		DEC  8 / ( D2[4] =  8)
-		DEC -1 / ( D2[5] = -1)
-		DEC  2 / ( D2[6] =  2)
-		DEC -1 / ( D2[7] = -1)
-		DEC  0 / ( D2[8] =  0)
-D3,		DEC -1 / ( D3[0] = -1)
-		DEC -1 / ( D3[1] = -1)
-		DEC -1 / ( D3[2] = -1)
-		DEC -1 / ( D3[3] = -1)
-		DEC  2 / ( D3[4] =  2)
-D4,		DEC -1 / ( D3[5] = -1)
-		DEC -1 / ( D3[6] = -1)
-		DEC -1 / ( D3[7] = -1)
-		DEC -1 / ( D3[8] = -1)
-		DEC  6 / ( D4[4] =  6)
-
 MY_X,   DEC 4
 MY_Y,   DEC 1
 PC_X,    DEC 0
+_M_,
 PC_Y,    DEC 3
+_M_,
+MY_WIN,	 HEX 0
+PC_WIN,	 HEX 0
 MY_SPEED,    DEC 1
 _M_,
 PC_SPEED,    DEC 1
