@@ -136,9 +136,49 @@ L_CLR_BRD, / loop clear board
         ISZ P_INI_BRD
 		ISZ CNT_1		/ ((++M[CNT_1]) == 0) ? skip next
 		BUN L_CLR_BRD	/ goto L_CLR_BRD (loop clear board)
+/ clear bullets and speed of bullets
+		LDA TOTAL_BULLET
+		CMA
+		INC
+		STA CNT_BULLET
+		LDA A_MY_BULLET_X	
+		STA P_MY_BULLET_X
+		LDA A_MY_BULLET_Y
+		STA P_MY_BULLET_Y
+		LDA A_PC_BULLET_X
+		STA P_PC_BULLET_X
+		LDA A_PC_BULLET_Y
+		STA P_PC_BULLET_Y
+		LDA A_MY_BULLET_SPEED
+		STA P_MY_BULLET_SPEED
+		LDA A_PC_BULLET_SPEED
+		STA P_PC_BULLET_SPEED
+L_CLR_BULLET,	/ loop clear bullets and speed
+		LDA VM1
+		STA P_MY_BULLET_X I
+		STA P_MY_BULLET_Y I 
+		STA P_PC_BULLET_X I 
+		STA P_PC_BULLET_Y I 
+		CLA 
+		STA P_MY_BULLET_SPEED I 
+		STA P_PC_BULLET_SPEED I 
+		ISZ P_MY_BULLET_X
+		ISZ P_MY_BULLET_Y
+		ISZ P_PC_BULLET_X
+		ISZ P_PC_BULLET_Y
+		ISZ P_MY_BULLET_SPEED
+		ISZ P_PC_BULLET_SPEED
+		ISZ CNT_BULLET
+		BUN L_CLR_BULLET
 / initialize move_count, winner
         CLA
 		STA WINNER		/ M[WINNER]  <- 0
+		STA MY_WIN
+		STA PC_WIN
+		LDA VD1
+		STA MY_Y
+		LDA VD3
+		STA PC_Y
 		LDA VM100			/ AC         <- -9
 		STA CNT_MOV		/ M[CNT_MOV] <- -9
 		BSA PRP_TURN	/ call PRP_TURN (prepare next turn)
@@ -557,25 +597,20 @@ STT_3,
 
 /////////// M[STT] = 4 : end game  ///////////
 STT_4,
-		/LDA WINNER		/ AC         <- M[WINNER]
-		/LDA MY_WIN
-		/SZA				/ (M[WINNER] == 0) ? skip next
-		/BUN WHO_WON		/ BUN WHO_WON (who won??)
-		/LDA A_MG_TIE	/ AC         <- M[A_MG_TIE] (MG_TIE : "it's a tie")
-		/STA RESULT		/ M[RESULT]  <- "it's a tie"
-		LDA MY_WIN
-		SZA 
-		BUN MY_WON
+		LDA WINNER		/ AC         <- M[WINNER] 0 or 1 or 2
+		ADD VM2
+		SPA 
+		BUN WHO_WON		/ BUN WHO_WON (who won??)
+		BUN TIE 		/ WINNER = 2, tie	
+TIE,		
+		LDA A_MG_TIE	/ AC         <- M[A_MG_TIE] (MG_TIE : "it's a tie")
+		STA RESULT		/ M[RESULT]  <- "it's a tie"
 		BUN STT_4_1		/ goto STT_4_1
 WHO_WON,
 		LDA MY_WIN
-		SZA				/ my_win = 0
-		BUN MY_WON
-		BUN PC_WON
-		INC				/ AC         <- - M[WINNER]
-		ADD YR_MK		/ AC         <- M[YR_MK] - M[WINNER]
-		SZA				/ (M[YR_MK] == M[WINNER]) ? skip next
-		BUN PC_WON		/ goto PC_WON
+		SZA				
+		BUN MY_WON		/ my_win = 1
+		BUN PC_WON		/ my_win = 0
 MY_WON,		
 		LDA A_MG_YWN	/ AC         <- M[A_MG_YWN] (MG_YWN : "you win!")
 		STA RESULT		/ M[RESULT]  <- "you win!"
@@ -664,7 +699,7 @@ UPD_TURN, HEX 0
 		INC				/ AC         <- 1 - M[TURN]
 		STA TURN		/ M[TURN]    <- 1 - M[TURN]
 		BSA CHK_WIN		/ call CHK_WIN
-		SZA				/ (AC == 0) ? skip next (AC = winner mark)
+		SZA				/ (AC == 0) ? skip next (AC = WINNER)
 		BUN END_TURN	/ goto END_TURN (winner mark != 0)
 		ISZ CNT_MOV		/ ((++M[CNT_MOV]) == 0) ? skip next
 		BUN NXT_TURN	/ goto NXT_TURN
@@ -691,49 +726,6 @@ CHK_CH,	HEX 0			/ return address
 		INC				/ AC <- AC + 1
 		BUN CHK_CH I	/ return from CHK_CH
 
-CHK_CH_N,	HEX 0       / ch
-////////// subroutine (check character) ///////////
-/ arg0 (AC) : ch (character to identify)
-/ return AC : (M[TMI] != ch)
-		CMA
-		INC				/ AC <- - ch
-		ADD TMI			/ AC <- M[TMI] - ch
-		BUN CHK_CH_N I	/ return from CHK_CH
-
-CHK_3, HEX 0
-/////////// subroutine (check 3-in-a-row)  ///////////
-/ arg0 (AC)  : pos
-/ M[BRD_OFS] : offset
-/ 3 positions : BRD[pos], BRD[pos + offset], BRD[pos + offset * 2]
-/ return AC (winner) : 'O' or 'X' or 0 (no winner)
-		ADD A_BRD		/ AC        <- pos + M[A_BRD] (BRD + pos)
-		STA P_BRD		/ M[P_BRD]  <- BRD + pos
-		LDA P_BRD I		/ AC        <- M[BRD + pos]
-		SZA				/ (M[BRD + pos] == 0) ? skip next
-		BUN CHK_3_1		/ goto CHK_3_1
-		BUN R_CHK_3_0	/ goto R_CHK_3_0 (return 0 : no winner)
-CHK_3_1,
-		STA TMI			/ M[TMI]    <- M[BRD + pos]
-		LDA VM2			/ AC        <- -2
-		STA CNT_2		/ M[CNT_2]  <- -2
-L_CHK_3,	/ loop check board : i = 1, 2 (BRD[pos] == BRD[pos + offset * i])
-		LDA P_BRD		/ AC        <- BRD + pos + offset * (i - 1)
-		ADD BRD_OFS		/ AC        <- BRD + pos + offset * i
-		STA P_BRD		/ M[P_BRD]  <- BRD + pos + offset * i
-		LDA P_BRD I		/ AC        <- M[BRD + pos + offset * i]
-		BSA CHK_CH_N	/ call check character
-		SZA				/ (AC == 0) ? skip next
-		BUN R_CHK_3_0	/ goto R_CHK_3_0 (return 0)
-		ISZ CNT_2		/ ((++M[CNT_2]) = 0) ? skip next
-		BUN L_CHK_3		/ goto L_CHK_3 (loop check board)
-/ this is 3-in-a-row!!
-		LDA TMI			/ AC        <- M[BRD + pos] (winner mark)
-		STA WINNER		/ M[WINNER] <- winner mark
-		BUN CHK_3 I		/ return from CHK_3
-R_CHK_3_0,
-		CLA				/ AC <- 0
-		BUN CHK_3 I		/ return from CHK_3
-
 CHK_WIN, HEX 0
 /////////// subroutine (check winner)  ///////////
 / return AC (winner) : 'O' or 'X' or 0 (no winner)
@@ -757,12 +749,44 @@ CHK_MY_WIN,
 		BUN CHK_NXT_MY_WIN
 		LDA VH1				/ y coordinate of bullet is equal 0, my win!!
 		STA MY_WIN
+		BUN PRP_CHK_PC_WIN	/ prepare to check whether pc wins
 CHK_NXT_MY_WIN,	
 		ISZ P_MY_BULLET_X
 		ISZ P_MY_BULLET_Y
 		ISZ CNT_BULLET
 		BUN CHK_MY_WIN
-		LDA MY_WIN
+PRP_CHK_PC_WIN,
+		LDA A_PC_BULLET_X
+		STA P_PC_BULLET_X
+		LDA A_PC_BULLET_Y
+		STA P_PC_BULLET_Y
+		LDA TOTAL_BULLET
+		CMA
+		INC
+		STA CNT_BULLET
+CHK_PC_WIN,		
+		LDA P_PC_BULLET_X I 
+		ADD VM4
+		SPA
+		BUN CHK_NXT_PC_WIN		/ x of PC's bulltet is less than 4, check next bullet
+		LDA P_PC_BULLET_Y I 	/ x >= 4, check y coordinate
+		CMA
+		INC
+		ADD MY_Y
+		SZA
+		BUN CHK_NXT_PC_WIN
+		LDA VH1				/ y coordinate of bullet is equal to my_y, pc win!!
+		STA PC_WIN
+		BUN CHK_WIN_OVER
+CHK_NXT_PC_WIN,
+		ISZ P_PC_BULLET_X
+		ISZ P_PC_BULLET_Y
+		ISZ CNT_BULLET
+		BUN CHK_PC_WIN
+CHK_WIN_OVER,
+		LDA PC_WIN
+		ADD MY_WIN
+		STA WINNER			/ WINNER = 0, no one wins, WINNER = 1, at least one wins, WINNER = 2, tie(my win and pc win)
 		BUN CHK_WIN I
 
 MY_MOV,	HEX 0
@@ -955,24 +979,17 @@ CNT_2,	DEC 0		/ counter 2
 CNT_CH,	DEC 0		/ char counter
 CNT_MOVE, DEC 0     / where to put M
 CNT_CLR_BULLET, DEC 0
-_M_,
 CNT_FIND_BULLET,	DEC 0
-_M_,
 CNT_TURN,   DEC -2
 P_BRD,	HEX 0		/ pointer to BRD
 P_MY_LNC, HEX 0		/ pointer to MY_LNC
 P_YR_LNC, HEX 0		/ pointer to YR_LNC
-P_INI_BRD, HEX 0    / pointer to INI_BRD 
-_M_,  
+P_INI_BRD, HEX 0    / pointer to INI_BRD   
 P_MY_BULLET_X,   HEX 0   / pointer to MY_BULLET_X
-_M_,
 P_MY_BULLET_Y,   HEX 0   / pointer to MY_BULLET_Y
-_M_,
 P_PC_BULLET_X,   HEX 0   / pointer to PC_BULLET_X
-_M_,
 P_PC_BULLET_Y,   HEX 0   / pointer to PC_BULLET_Y
 P_MY_BULLET_SPEED, 	HEX 0    /pointer to MY_BULLET_SPEED
-_M_,
 P_PC_BULLET_SPEED,	HEX 0
 BRD_OFS,DEC 0		/ BRD offset
 BRD_POS,DEC 0		/ BRD pos
@@ -986,9 +1003,7 @@ MY_BLK,	DEC 0		/ myBlock
 / data (need initialization code : one-time)
 BYE,	DEC 0		/ (init: 0) bye
 NXT_BYE,DEC 0		/ (init: 0) next bye
-_M_,
 STT,	DEC 0		/ (init: 0) current state
-_M_,
 NXT_STT,DEC 0		/ (init: 0) next state
 OUT_STT,DEC 0		/ (init: 0) output state
 NXT_INP,DEC 0		/ (init: 0) next process input
@@ -1064,46 +1079,40 @@ TOTAL_BULLET,   DEC 4
 CNT_BULLET,     DEC 0       / control loop
 
 A_MY_BULLET_X,    SYM MY_BULLET_X
-_M_,
 MY_BULLET_X,      DEC -1
-_M_,                  DEC -1
-_M_,                  DEC -1
-_M_,                  DEC -1
+                  DEC -1
+                  DEC -1
+                  DEC -1
 
 A_MY_BULLET_Y,    SYM MY_BULLET_Y
-_M_,
 MY_BULLET_Y,      DEC -1
-_M_,                 DEC -1
-_M_,                  DEC -1
-_M_,                  DEC -1
+                  DEC -1
+                  DEC -1
+                  DEC -1
 
 A_MY_BULLET_SPEED,      SYM MY_BULLET_SPEED 
-_M_,
 MY_BULLET_SPEED,        DEC 0
-_M_,                        DEC 0
-_M_,                       	DEC 0
-_M_,                       DEC 0
+                       	DEC 0
+                       	DEC 0
+                       	DEC 0
 
 A_PC_BULLET_X,     SYM PC_BULLET_X
-_M_,
 PC_BULLET_X,       DEC -1
-_M_,                   DEC -1
-_M_,                   DEC -1
-_M_,                   DEC -1
+                   DEC -1
+                   DEC -1
+                   DEC -1
 
 A_PC_BULLET_Y,     SYM PC_BULLET_Y
-_M_,
 PC_BULLET_Y,       DEC -1
-_M_,                   DEC -1
-_M_,                   DEC -1
-_M_,                   DEC -1
+                   DEC -1
+                   DEC -1
+                   DEC -1
 
 A_PC_BULLET_SPEED,  SYM PC_BULLET_SPEED
-_M_,
 PC_BULLET_SPEED,	DEC 0
-_M_,					DEC 0
-_M_,					DEC 0
-_M_,					DEC 0
+					DEC 0
+					DEC 0
+					DEC 0
 
 / data (read-only)
 AMK,	HEX FFF0	/ AMK = FFF0 (and mask)
@@ -1350,15 +1359,11 @@ MG_BRD,	DEC 25	/ MG_BRD length
 MY_X,   DEC 4
 MY_Y,   DEC 1
 PC_X,    DEC 0
-_M_,
 PC_Y,    DEC 3
-_M_,
 MY_WIN,	 HEX 0
 PC_WIN,	 HEX 0
 MY_SPEED,    DEC 1
-_M_,
 PC_SPEED,    DEC 1
-_M_,
 PC_ACTION,   DEC 0 
 SEED,         DEC 1       / Initial seed
 MULTIPLIER,     DEC 5       / Multiplier
