@@ -179,13 +179,13 @@ L_CLR_BULLET,	/ loop clear bullets and speed
 		STA MY_Y
 		LDA VD3
 		STA PC_Y
-		LDA VM100			/ AC         <- -9
-		STA CNT_MOV		/ M[CNT_MOV] <- -9
+		LDA VM100			/ AC         <- −100
+		STA CNT_MOV		/ M[CNT_MOV] <- -100
 		BSA PRP_TURN	/ call PRP_TURN (prepare next turn)
 		BSA SHOW_GAME	/ call SHOW_GAME
 		BUN PRP_OUT		/ goto PRP_OUT (prepare output)
 
-/////////// M[STT] = 1 : get your move (must satisfy: '1' <= M[TMI] <= '9')  ///////////
+/////////// M[STT] = 1 : get your move ///////////
 STT_1,
         LDA CH_a
         BSA CHK_CH
@@ -311,7 +311,7 @@ PRE_UPD_TURN,
 		BSA UPD_BULLET
         BUN PRP_OUT
 		BSA CHK_WIN		/ call CHK_WIN
-		SZA				/ (AC == 0) ? skip next (AC = winner mark)
+		SZA				/ (AC == 0) ? skip next (AC = WINNER)
 		BUN END_GAME	/ goto END_TURN (winner mark != 0)
 		BUN PRP_OUT
 END_GAME,
@@ -728,7 +728,7 @@ CHK_CH,	HEX 0			/ return address
 
 CHK_WIN, HEX 0
 /////////// subroutine (check winner)  ///////////
-/ return AC (winner) : 'O' or 'X' or 0 (no winner)
+/ return AC (winner) : 0(no winner) or 1 or 2 
 		LDA A_MY_BULLET_X
 		STA P_MY_BULLET_X
 		LDA A_MY_BULLET_Y
@@ -808,6 +808,12 @@ RAND,  HEX 0
        LDA P
        ADD CONST       / Add Const
        STA P
+	   LDA MULTIPLIER
+	   INC
+	   STA MULTIPLIER
+	   LDA CONST
+	   INC
+	   STA CONST
        BSA DIVIDE       / Modulo M
        LDA R 
        STA SEED
@@ -1380,4 +1386,3 @@ Q,      HEX 0000
 K_INI,  DEC -16
 K,      DEC 0
 END
-
